@@ -167,6 +167,7 @@ public class MP3Player extends Service {
             }
             mPlayer.start();
             Intent broadcastIntent = new Intent();
+            broadcastIntent.putExtra("duration",getDuration());
             broadcastIntent.setAction(MainActivity.ACTION_MEDIA_START);
             sendBroadcast(broadcastIntent);
         }

@@ -138,8 +138,7 @@ public class MainActivity extends AppCompatActivity implements ItemClickListener
                 seekBar.setProgress(mService.getProgress() / SB_FACTOR);
                 mTimeLeftInMillis = millisUntilFinished;
             }
-            public void onFinish() {
-            }
+            public void onFinish() {}
         }.start();
     }
 
@@ -170,19 +169,25 @@ public class MainActivity extends AppCompatActivity implements ItemClickListener
                 final String action = intent.getAction();
                 switch (action) {
                     case ACTION_MEDIA_START:    //receive broadcast from MP3 Player where music is started
-                        bindService(music, connection, BIND_AUTO_CREATE);
-                        //Toast.makeText(getApplicationContext(),"Music start playing!",Toast.LENGTH_SHORT).show();
+                        try{
+                            mCountDownTimer.cancel();
+                            setUpTimer();
+                        }
+                        catch(NullPointerException e){
+                            e.printStackTrace();
+                        }
                         break;
                     case ACTION_MEDIA_COMPLETE: //receive broadcast from MP3 Player where music is completed
-                        //Toast.makeText(getApplicationContext(), "Music finish playing!", Toast.LENGTH_SHORT).show();
                         stopTimer();
                         stopServices();
                         break;
                     case ACTION_MEDIA_RESUME: //receive broadcast from MP3 Player where music is resume (clicked in notification)
                         btn_playpause.setImageResource(R.drawable.ic_pause_black_24dp);
+                        resumeTimer();
                         break;
                     case ACTION_MEDIA_PAUSE: //receive broadcast from MP3 Player where music is pause (clicked in notification)
                         btn_playpause.setImageResource(R.drawable.ic_play_arrow_black_24dp);
+                        pauseTimer();
                         break;
                 }
             }
@@ -228,11 +233,9 @@ public class MainActivity extends AppCompatActivity implements ItemClickListener
                 switch (mService.getState()) {
                     case PAUSED:    //User resume music during pause state
                         resumeTimer();
-                        //Toast.makeText(this, "Resume!", Toast.LENGTH_SHORT).show();
                         break;
                     case PLAYING: //User pause music during playing state
                         pauseTimer();
-                        //Toast.makeText(this, "Paused!", Toast.LENGTH_SHORT).show();
                         break;
                 }
                 break;
@@ -261,6 +264,7 @@ public class MainActivity extends AppCompatActivity implements ItemClickListener
         music.putExtra("title", title);
         music.setAction(MP3Player.ACTION_START_FOREGROUND_SERVICE);
         startService(music);
+        bindService(music, connection, BIND_AUTO_CREATE);
     }
 
     @Override
@@ -303,7 +307,7 @@ public class MainActivity extends AppCompatActivity implements ItemClickListener
     }
     private void stopServices(){
         music.setAction(MP3Player.ACTION_STOP_FOREGROUND_SERVICE);
-        startService(music);unbindService(connection);
+        startService(music);
     }
     //check if MP3 Player service is running
     private boolean isMyServiceRunning(Class<?> serviceClass) {
