@@ -65,7 +65,7 @@ public class MainActivity extends AppCompatActivity implements ItemClickListener
         btn_playpause = findViewById(R.id.btn_playpause);
         btn_stop = findViewById(R.id.btn_stop);
         seekBar = findViewById(R.id.seekbar_progress);
-        seekBar.setOnSeekBarChangeListener(this);
+        seekBar.setOnSeekBarChangeListener(this);seekBar.setEnabled(false);
         music = new Intent(this, MP3Player.class);
         recyclerView = findViewById(R.id.recyclerview_main);
         if (!hasPermission(PERMISSION_STRING)) {
@@ -124,6 +124,7 @@ public class MainActivity extends AppCompatActivity implements ItemClickListener
     };
 
     private void setUpTimer() {
+        seekBar.setEnabled(true);
         mTimeLeftInMillis = mService.getDuration() - mService.getProgress();
         seekBar.setMax(mService.getDuration() / SB_FACTOR);
         long min=getCalculatedMin(mService.getDuration());
@@ -131,8 +132,8 @@ public class MainActivity extends AppCompatActivity implements ItemClickListener
         textview_totalduration.setText("/" + min + ":" + String.format("%02d", seconds));
         mCountDownTimer = new CountDownTimer(mTimeLeftInMillis, 1000) {
             public void onTick(long millisUntilFinished) {
-                final long min = getCalculatedMin((int)millisUntilFinished);
-                final long seconds = getCalculatedSec((int)millisUntilFinished);
+                long min = getCalculatedMin((int)millisUntilFinished);
+                long seconds = getCalculatedSec((int)millisUntilFinished);
                 textView_currentPos.setText(min + ":" + String.format("%02d", seconds));
                 seekBar.setProgress(mService.getProgress() / SB_FACTOR);
                 mTimeLeftInMillis = millisUntilFinished;
@@ -301,9 +302,8 @@ public class MainActivity extends AppCompatActivity implements ItemClickListener
         return seconds;
     }
     private void stopServices(){
-        unbindService(connection);
         music.setAction(MP3Player.ACTION_STOP_FOREGROUND_SERVICE);
-        startService(music);
+        startService(music);unbindService(connection);
     }
     //check if MP3 Player service is running
     private boolean isMyServiceRunning(Class<?> serviceClass) {
