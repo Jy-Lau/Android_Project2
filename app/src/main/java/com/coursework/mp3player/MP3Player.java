@@ -33,7 +33,7 @@ public class MP3Player extends Service {
     private Notification notification;
     private CharSequence name = "Channel 1";
     private String description = "Channel Description";
-    private boolean songCheck=false;
+    private boolean songCheck = false;
     private final String TAG_FOREGROUND_SERVICE = "FOREGROUND_SERVICE";
 
     public final static String ACTION_START_FOREGROUND_SERVICE = "ACTION_START_FOREGROUND_SERVICE";
@@ -53,10 +53,9 @@ public class MP3Player extends Service {
         }
     }
 
-    private void startForegroundService(String artist, String title)
-    {
+    private void startForegroundService(String artist, String title) {
         Log.d(TAG_FOREGROUND_SERVICE, "Start foreground service.");
-        if(!songCheck) {
+        if (!songCheck) {
             // Create notification default intent.
             PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class), 0);
             Intent playIntent = new Intent(this, MP3Player.class);
@@ -101,6 +100,7 @@ public class MP3Player extends Service {
         mPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
             @Override
             public void onCompletion(MediaPlayer mp) {
+                state=MP3PlayerState.STOPPED;
                 Intent broadcastIntent = new Intent();
                 broadcastIntent.setAction(MainActivity.ACTION_MEDIA_COMPLETE);
                 sendBroadcast(broadcastIntent);
@@ -110,18 +110,16 @@ public class MP3Player extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if(intent != null)
-        {
+        if (intent != null) {
             String action = intent.getAction();
-            String musicpath=intent.getStringExtra("musicpath");
-            String artist=intent.getStringExtra("artist");
-            String title=intent.getStringExtra("title");
-            switch (action)
-            {
+            String musicpath = intent.getStringExtra("musicpath");
+            String artist = intent.getStringExtra("artist");
+            String title = intent.getStringExtra("title");
+            switch (action) {
                 case ACTION_START_FOREGROUND_SERVICE:
                     loadfromitem(musicpath); //load music file path, and if music player is currently playing, set variable songcheck to true, so that playmusic() wont be playing music again
                     playMusic(); //play music load by musicpath if songcheck is false
-                    startForegroundService(artist,title); //start foreground service by displaying artist name, song title name, Play Button, Pause Button.
+                    startForegroundService(artist, title); //start foreground service by displaying artist name, song title name, Play Button, Pause Button.
                     break;
                 case ACTION_STOP_FOREGROUND_SERVICE:
                     stopForegroundService(); //stop foreground service and dismiss notification
@@ -138,18 +136,19 @@ public class MP3Player extends Service {
         return START_NOT_STICKY;
 //        return super.onStartCommand(intent, flags, startId);
     }
-    private void stopForegroundService()
-    {
+
+    private void stopForegroundService() {
         Log.d(TAG_FOREGROUND_SERVICE, "Stop foreground service.");
         stop();
         // Stop foreground service and remove the notification.
-        stopForeground(true);
+        stopForeground(false);
 
         // Stop the foreground service.
         stopSelf();
     }
-    private void playMusic(){
-        if(!songCheck){
+
+    private void playMusic() {
+        if (!songCheck) {
             initiateMediaPlayer();  //initiate new Music Player to play different music
             this.state = MP3PlayerState.PLAYING;
             try {
@@ -172,6 +171,7 @@ public class MP3Player extends Service {
             sendBroadcast(broadcastIntent);
         }
     }
+
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
@@ -184,19 +184,18 @@ public class MP3Player extends Service {
 
 
     private void loadfromitem(String filePath) {
-        if(mPlayer!=null){
-            if(state==MP3PlayerState.STOPPED){
-                songCheck=false;
+        if (mPlayer != null) {
+            if (state == MP3PlayerState.STOPPED) {
+                songCheck = false;
                 this.filePath = filePath;
                 return;
-            }
-            else if (state==MP3PlayerState.PLAYING && filePath.equals(this.filePath) ) {
-                songCheck=true;
+            } else if (state == MP3PlayerState.PLAYING && filePath.equals(this.filePath)) {
+                songCheck = true;
                 return;
-            } else if (state==MP3PlayerState.PLAYING && !filePath.equals(this.filePath)) {
+            } else {
                 stop(); //stop the mp3 player if music path loaded is not the same as current playing music
             }
-            songCheck=false;
+            songCheck = false;
         }
         this.filePath = filePath;
     }
@@ -215,6 +214,7 @@ public class MP3Player extends Service {
                 return mPlayer.getDuration();
         return 0;
     }
+
     public void pause() {
         if (state == MP3PlayerState.PLAYING) {
             mPlayer.pause();
@@ -228,7 +228,7 @@ public class MP3Player extends Service {
 
     private void stop() {
         if (mPlayer != null) {
-            if (state==MP3PlayerState.PLAYING) {
+            if (state == MP3PlayerState.PLAYING) {
                 mPlayer.stop();
                 state = MP3PlayerState.STOPPED;
                 mPlayer.reset();
@@ -239,8 +239,8 @@ public class MP3Player extends Service {
 
     public void resume() {
         if (mPlayer != null) {
-            if (state!=MP3PlayerState.PLAYING) {
-                this.state=MP3PlayerState.PLAYING;
+            if (state != MP3PlayerState.PLAYING) {
+                this.state = MP3PlayerState.PLAYING;
                 mPlayer.seekTo(length);
                 mPlayer.start();
                 Intent broadcastIntent = new Intent();
@@ -251,8 +251,8 @@ public class MP3Player extends Service {
     }
 
     public void seekTo(int i) {
-        if(mPlayer!=null){  //dont care state
-            length=i;
+        if (mPlayer != null) {  //dont care state
+            length = i;
         }
     }
 

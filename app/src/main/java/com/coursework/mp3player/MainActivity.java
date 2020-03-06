@@ -50,7 +50,6 @@ public class MainActivity extends AppCompatActivity implements ItemClickListener
     public static final String ACTION_MEDIA_COMPLETE = "ACTION_MEDIA_COMPLETE";
     public static final String ACTION_MEDIA_RESUME = "ACTION_MEDIA_RESUME";
     public static final String ACTION_MEDIA_PAUSE = "ACTION_MEDIA_PAUSE";
-    public static final String ACTION_MEDIA_PROGRESS = "ACTION_MEDIA_PROGRESS";
     private static final int SB_FACTOR = 1000;   //seek bar has maximum value of 1000, therefore have to divide milliseconds by factor 1000 before input to seek bar
     private static final String[] PERMISSION_STRING = new String[]{Manifest.permission.READ_EXTERNAL_STORAGE};
     private static final int REQUEST_CODE = 1;
@@ -115,9 +114,7 @@ public class MainActivity extends AppCompatActivity implements ItemClickListener
             // We've bound to LocalService, cast the IBinder and get LocalService instance
             MP3Player.LocalBinder binder = (MP3Player.LocalBinder) service;
             mService = binder.getService();
-            registerBroadcast();
-            mTimeLeftInMillis = mService.getDuration() - mService.getProgress();
-            Log.d("duration: ", "" + mService.getDuration());
+            Log.d("durationasdfasdf: ", "" + mService.getDuration());
             Log.d("progress: ", "" + mService.getProgress());
             setUpTimer();
         }
@@ -127,20 +124,19 @@ public class MainActivity extends AppCompatActivity implements ItemClickListener
     };
 
     private void setUpTimer() {
-        long min = TimeUnit.MILLISECONDS.toMinutes(mService.getDuration());
-        long seconds = TimeUnit.MILLISECONDS.toSeconds(mService.getDuration()) -
-                TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(mService.getDuration()));
+        mTimeLeftInMillis = mService.getDuration() - mService.getProgress();
+        seekBar.setMax(mService.getDuration() / SB_FACTOR);
+        long min=getCalculatedMin(mService.getDuration());
+        long seconds=getCalculatedSec(mService.getDuration());
         textview_totalduration.setText("/" + min + ":" + String.format("%02d", seconds));
         mCountDownTimer = new CountDownTimer(mTimeLeftInMillis, 1000) {
             public void onTick(long millisUntilFinished) {
-                final long min = TimeUnit.MILLISECONDS.toMinutes(millisUntilFinished);
-                final long seconds = TimeUnit.MILLISECONDS.toSeconds(millisUntilFinished) -
-                        TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(millisUntilFinished));
+                final long min = getCalculatedMin((int)millisUntilFinished);
+                final long seconds = getCalculatedSec((int)millisUntilFinished);
                 textView_currentPos.setText(min + ":" + String.format("%02d", seconds));
                 seekBar.setProgress(mService.getProgress() / SB_FACTOR);
                 mTimeLeftInMillis = millisUntilFinished;
             }
-
             public void onFinish() {
             }
         }.start();
@@ -161,12 +157,11 @@ public class MainActivity extends AppCompatActivity implements ItemClickListener
         mCountDownTimer.cancel();
         seekBar.setProgress(0);
         seekBar.setEnabled(false);
-        music.setAction(MP3Player.ACTION_STOP_FOREGROUND_SERVICE);
         btn_playpause.setImageResource(R.drawable.ic_play_arrow_black_24dp);
         textview_totalduration.setText("/0.00");
         textView_currentPos.setText("0.00");
     }
-
+    //callbacks from MP3Player service
     private void registerBroadcast() {
         mBroadcastReceiver = new BroadcastReceiver() {
             @Override
@@ -174,22 +169,19 @@ public class MainActivity extends AppCompatActivity implements ItemClickListener
                 final String action = intent.getAction();
                 switch (action) {
                     case ACTION_MEDIA_START:    //receive broadcast from MP3 Player where music is started
-                        seekBar.setMax(mService.getDuration() / SB_FACTOR);
-                        long min = TimeUnit.MILLISECONDS.toMinutes(mService.getDuration());
-                        long seconds = TimeUnit.MILLISECONDS.toSeconds(mService.getDuration()) -
-                                TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(mService.getDuration()));
-                        textview_totalduration.setText("/" + min + ":" + String.format("%02d", seconds));
+                        bindService(music, connection, BIND_AUTO_CREATE);
+                        //Toast.makeText(getApplicationContext(),"Music start playing!",Toast.LENGTH_SHORT).show();
                         break;
                     case ACTION_MEDIA_COMPLETE: //receive broadcast from MP3 Player where music is completed
-                        Toast.makeText(getApplicationContext(), "Music finish playing!", Toast.LENGTH_SHORT).show();
+                        //Toast.makeText(getApplicationContext(), "Music finish playing!", Toast.LENGTH_SHORT).show();
+                        stopTimer();
+                        stopServices();
                         break;
                     case ACTION_MEDIA_RESUME: //receive broadcast from MP3 Player where music is resume (clicked in notification)
                         btn_playpause.setImageResource(R.drawable.ic_pause_black_24dp);
                         break;
                     case ACTION_MEDIA_PAUSE: //receive broadcast from MP3 Player where music is pause (clicked in notification)
                         btn_playpause.setImageResource(R.drawable.ic_play_arrow_black_24dp);
-                        break;
-                    case ACTION_MEDIA_PROGRESS:
                         break;
                 }
             }
@@ -203,11 +195,11 @@ public class MainActivity extends AppCompatActivity implements ItemClickListener
     @Override
     protected void onStart() {
         super.onStart();
+        registerBroadcast();
         if (isMyServiceRunning(MP3Player.class)) {//if MP3 Player service is running, set up buttons and seek bar and start handler timer
             bindService(music, connection, BIND_AUTO_CREATE);
         }
     }
-
 
     private void setUpRecyclerViewwithFile(File[] list) {
         if (list != null) {
@@ -235,11 +227,11 @@ public class MainActivity extends AppCompatActivity implements ItemClickListener
                 switch (mService.getState()) {
                     case PAUSED:    //User resume music during pause state
                         resumeTimer();
-                        Toast.makeText(this, "Resume!", Toast.LENGTH_SHORT).show();
+                        //Toast.makeText(this, "Resume!", Toast.LENGTH_SHORT).show();
                         break;
                     case PLAYING: //User pause music during playing state
                         pauseTimer();
-                        Toast.makeText(this, "Paused!", Toast.LENGTH_SHORT).show();
+                        //Toast.makeText(this, "Paused!", Toast.LENGTH_SHORT).show();
                         break;
                 }
                 break;
@@ -249,10 +241,8 @@ public class MainActivity extends AppCompatActivity implements ItemClickListener
                     return;
                 }
                 stopTimer();
-                music.setAction(MP3Player.ACTION_STOP_FOREGROUND_SERVICE);
+                stopServices();
                 btn_playpause.setImageResource(R.drawable.ic_play_arrow_black_24dp);
-                startService(music);
-                Toast.makeText(this, "Stop!", Toast.LENGTH_SHORT).show();
                 break;
         }
     }
@@ -270,15 +260,13 @@ public class MainActivity extends AppCompatActivity implements ItemClickListener
         music.putExtra("title", title);
         music.setAction(MP3Player.ACTION_START_FOREGROUND_SERVICE);
         startService(music);
-        bindService(music, connection, BIND_AUTO_CREATE);
     }
 
     @Override
     public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
         if (mService != null && fromUser && mService.getState() != MP3Player.MP3PlayerState.STOPPED) {
-            long min = TimeUnit.MILLISECONDS.toMinutes((seekBar.getMax() - progress) * SB_FACTOR);
-            long seconds = TimeUnit.MILLISECONDS.toSeconds((seekBar.getMax() - progress) * SB_FACTOR) -
-                    TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes((seekBar.getMax() - progress) * SB_FACTOR));
+            long min=getCalculatedMin((seekBar.getMax() - progress) * SB_FACTOR);
+            long seconds=getCalculatedSec((seekBar.getMax() - progress) * SB_FACTOR);
             textView_currentPos.setText(min + ":" + String.format("%02d", seconds));
         }
     }
@@ -303,6 +291,20 @@ public class MainActivity extends AppCompatActivity implements ItemClickListener
         }
     }
 
+    private long getCalculatedMin(int min){
+        long minutes = TimeUnit.MILLISECONDS.toMinutes(min);
+        return minutes;
+    }
+    private long getCalculatedSec(int sec){
+        long seconds = TimeUnit.MILLISECONDS.toSeconds(sec) -
+                TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(sec));
+        return seconds;
+    }
+    private void stopServices(){
+        unbindService(connection);
+        music.setAction(MP3Player.ACTION_STOP_FOREGROUND_SERVICE);
+        startService(music);
+    }
     //check if MP3 Player service is running
     private boolean isMyServiceRunning(Class<?> serviceClass) {
         ActivityManager manager = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
