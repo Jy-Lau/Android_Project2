@@ -154,12 +154,7 @@ public class MP3Player extends Service {
             try {
                 mPlayer.setDataSource(this.filePath);
                 mPlayer.prepare();
-            } catch (IOException e) {
-                Log.e("MP3Player", e.toString());
-                e.printStackTrace();
-                this.state = MP3PlayerState.ERROR;
-                return;
-            } catch (IllegalArgumentException e) {
+            } catch (IOException | IllegalArgumentException e) {
                 Log.e("MP3Player", e.toString());
                 e.printStackTrace();
                 this.state = MP3PlayerState.ERROR;
@@ -217,9 +212,11 @@ public class MP3Player extends Service {
     }
 
     private void pauseFromNoti() {
-        Intent broadcastIntent = new Intent();
-        broadcastIntent.setAction(MainActivity.ACTION_MEDIA_PAUSE);
-        sendBroadcast(broadcastIntent);
+        if (state == MP3PlayerState.PLAYING) {
+            Intent broadcastIntent = new Intent();
+            broadcastIntent.setAction(MainActivity.ACTION_MEDIA_PAUSE);
+            sendBroadcast(broadcastIntent);
+        }
     }
 
     public void pause() {
@@ -242,9 +239,13 @@ public class MP3Player extends Service {
     }
 
     private void resumefromNoti() {
-        Intent broadcastIntent = new Intent();
-        broadcastIntent.setAction(MainActivity.ACTION_MEDIA_RESUME);
-        sendBroadcast(broadcastIntent);
+        if (mPlayer != null) {
+            if (state != MP3PlayerState.PLAYING) {
+                Intent broadcastIntent = new Intent();
+                broadcastIntent.setAction(MainActivity.ACTION_MEDIA_RESUME);
+                sendBroadcast(broadcastIntent);
+            }
+        }
     }
 
     public void resume() {
