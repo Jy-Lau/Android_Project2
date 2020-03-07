@@ -100,7 +100,7 @@ public class MP3Player extends Service {
         mPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
             @Override
             public void onCompletion(MediaPlayer mp) {
-                state=MP3PlayerState.STOPPED;
+                state = MP3PlayerState.STOPPED;
                 Intent broadcastIntent = new Intent();
                 broadcastIntent.setAction(MainActivity.ACTION_MEDIA_COMPLETE);
                 sendBroadcast(broadcastIntent);
@@ -125,10 +125,10 @@ public class MP3Player extends Service {
                     stopForegroundService(); //stop foreground service and dismiss notification
                     break;
                 case ACTION_PLAY:
-                    resume(); //Play music
+                    resumefromNoti(); //Play music
                     break;
                 case ACTION_PAUSE:
-                    pause(); //Pause music
+                    pauseFromNoti(); //Pause music
                     break;
             }
         }
@@ -167,7 +167,7 @@ public class MP3Player extends Service {
             }
             mPlayer.start();
             Intent broadcastIntent = new Intent();
-            broadcastIntent.putExtra("duration",getDuration());
+            broadcastIntent.putExtra("duration", getDuration());
             broadcastIntent.setAction(MainActivity.ACTION_MEDIA_START);
             sendBroadcast(broadcastIntent);
         }
@@ -216,14 +216,17 @@ public class MP3Player extends Service {
         return 0;
     }
 
+    private void pauseFromNoti() {
+        Intent broadcastIntent = new Intent();
+        broadcastIntent.setAction(MainActivity.ACTION_MEDIA_PAUSE);
+        sendBroadcast(broadcastIntent);
+    }
+
     public void pause() {
         if (state == MP3PlayerState.PLAYING) {
             mPlayer.pause();
             state = MP3PlayerState.PAUSED;
             length = mPlayer.getCurrentPosition();
-            Intent broadcastIntent = new Intent();
-            broadcastIntent.setAction(MainActivity.ACTION_MEDIA_PAUSE);
-            sendBroadcast(broadcastIntent);
         }
     }
 
@@ -238,15 +241,18 @@ public class MP3Player extends Service {
         }
     }
 
+    private void resumefromNoti() {
+        Intent broadcastIntent = new Intent();
+        broadcastIntent.setAction(MainActivity.ACTION_MEDIA_RESUME);
+        sendBroadcast(broadcastIntent);
+    }
+
     public void resume() {
         if (mPlayer != null) {
             if (state != MP3PlayerState.PLAYING) {
                 this.state = MP3PlayerState.PLAYING;
                 mPlayer.seekTo(length);
                 mPlayer.start();
-                Intent broadcastIntent = new Intent();
-                broadcastIntent.setAction(MainActivity.ACTION_MEDIA_RESUME);
-                sendBroadcast(broadcastIntent);
             }
         }
     }

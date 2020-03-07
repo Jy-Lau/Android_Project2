@@ -145,11 +145,13 @@ public class MainActivity extends AppCompatActivity implements ItemClickListener
     private void pauseTimer() {
         mCountDownTimer.cancel();
         mService.pause();
+        btn_playpause.setImageResource(R.drawable.ic_play_arrow_black_24dp);
     }
 
     private void resumeTimer() {
         mService.resume();
         setUpTimer();
+        btn_playpause.setImageResource(R.drawable.ic_pause_black_24dp);
     }
 
     private void stopTimer() {
@@ -181,10 +183,10 @@ public class MainActivity extends AppCompatActivity implements ItemClickListener
                         stopServices();
                         break;
                     case ACTION_MEDIA_RESUME: //receive broadcast from MP3 Player where music is resume (clicked in notification)
-                        btn_playpause.setImageResource(R.drawable.ic_pause_black_24dp);
+                        resumeTimer();
                         break;
                     case ACTION_MEDIA_PAUSE: //receive broadcast from MP3 Player where music is pause (clicked in notification)
-                        btn_playpause.setImageResource(R.drawable.ic_play_arrow_black_24dp);
+                        pauseTimer();
                         break;
                 }
             }
